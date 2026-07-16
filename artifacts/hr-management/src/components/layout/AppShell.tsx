@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { useUser } from '@/contexts/UserContext';
-import { LayoutDashboard, Megaphone, CalendarCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { LayoutDashboard, Megaphone, CalendarCheck, Clock, Settings, CheckCircle2 } from 'lucide-react';
 import { 
   Sidebar, 
   SidebarContent, 
@@ -34,6 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Requests', icon: CalendarCheck, href: '/requests' },
     { label: 'Time & Clock', icon: Clock, href: '/clock' },
+    { label: 'Settings', icon: Settings, href: '/settings' },
   ];
 
   return (

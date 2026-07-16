@@ -10,6 +10,7 @@ import DashboardPage from '@/pages/dashboard/index';
 import AnnouncementsPage from '@/pages/announcements/index';
 import RequestsPage from '@/pages/requests/index';
 import ClockPage from '@/pages/clock/index';
+import SettingsPage from '@/pages/settings/index';
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/announcements" component={AnnouncementsPage} />
         <Route path="/requests" component={RequestsPage} />
         <Route path="/clock" component={ClockPage} />
+        <Route path="/settings" component={SettingsPage} />
         <Route component={NotFound} />
       </Switch>
     </AppShell>
