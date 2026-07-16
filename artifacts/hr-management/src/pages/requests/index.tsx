@@ -8,10 +8,11 @@ import {
   RequestInputType,
   RequestStatusUpdateStatus
 } from '@workspace/api-client-react';
+import type { Request } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -60,6 +61,13 @@ export default function RequestsPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [type, setType] = useState<string>(RequestInputType.Time_Off);
   const [reason, setReason] = useState('');
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+
+  const handleView = (req: Request) => {
+    setSelectedRequest(req);
+    setViewOpen(true);
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +181,11 @@ export default function RequestsPage() {
                 </TableRow>
               ) : (
                 requests?.map((req) => (
-                  <TableRow key={req.id}>
+                  <TableRow 
+                    key={req.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleView(req)}
+                  >
                     {!isEmployee && (
                       <TableCell className="font-medium text-foreground whitespace-nowrap">
                         {req.userName}
@@ -203,7 +215,10 @@ export default function RequestsPage() {
                               size="sm" 
                               variant="outline" 
                               className="text-primary hover:text-primary hover:bg-primary/10"
-                              onClick={() => handleStatusUpdate(req.id, RequestStatusUpdateStatus.Approved)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusUpdate(req.id, RequestStatusUpdateStatus.Approved);
+                              }}
                               disabled={updateMutation.isPending}
                             >
                               <Check className="h-4 w-4" />
@@ -212,7 +227,10 @@ export default function RequestsPage() {
                               size="sm" 
                               variant="outline" 
                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleStatusUpdate(req.id, RequestStatusUpdateStatus.Denied)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusUpdate(req.id, RequestStatusUpdateStatus.Denied);
+                              }}
                               disabled={updateMutation.isPending}
                             >
                               <X className="h-4 w-4" />
@@ -230,6 +248,38 @@ export default function RequestsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{selectedRequest?.type} Request</DialogTitle>
+            <CardDescription className="flex flex-col gap-1 mt-2">
+              <div className="flex items-center gap-2">
+                {!isEmployee && selectedRequest && (
+                  <>
+                    <span className="font-medium text-foreground">{selectedRequest.userName}</span>
+                    <span>•</span>
+                  </>
+                )}
+                <span>{selectedRequest && format(new Date(selectedRequest.createdAt), 'MMM d, yyyy')}</span>
+              </div>
+              <div className="mt-1">
+                <Badge variant={
+                  selectedRequest?.status === 'Approved' ? 'default' : 
+                  selectedRequest?.status === 'Denied' ? 'destructive' : 
+                  'secondary'
+                }>
+                  {selectedRequest?.status}
+                </Badge>
+              </div>
+            </CardDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-2">
+            <Label className="text-muted-foreground">Details</Label>
+            <p className="text-foreground whitespace-pre-wrap">{selectedRequest?.reason}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

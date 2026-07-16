@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useListAnnouncements, useCreateAnnouncement, useDeleteAnnouncement, getListAnnouncementsQueryKey } from '@workspace/api-client-react';
+import type { Announcement } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,13 @@ export default function AnnouncementsPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+
+  const handleView = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+    setViewOpen(true);
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +142,11 @@ export default function AnnouncementsPage() {
           </div>
         ) : (
           announcements?.map((announcement) => (
-            <Card key={announcement.id} className="overflow-hidden">
+            <Card 
+              key={announcement.id} 
+              className="overflow-hidden cursor-pointer hover:bg-muted/40 transition-colors"
+              onClick={() => handleView(announcement)}
+            >
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div className="flex gap-4">
@@ -157,7 +169,8 @@ export default function AnnouncementsPage() {
                       variant="ghost" 
                       size="icon" 
                       className="text-muted-foreground hover:text-destructive"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (confirm('Are you sure you want to delete this announcement?')) {
                           deleteMutation.mutate({ id: announcement.id });
                         }
@@ -170,7 +183,7 @@ export default function AnnouncementsPage() {
               </CardHeader>
               <CardContent>
                 <div 
-                  className="prose prose-sm md:prose-base dark:prose-invert max-w-none text-muted-foreground"
+                  className="prose prose-sm md:prose-base dark:prose-invert max-w-none text-muted-foreground line-clamp-4"
                   dangerouslySetInnerHTML={{ __html: announcement.content }}
                 />
               </CardContent>
@@ -178,6 +191,25 @@ export default function AnnouncementsPage() {
           ))
         )}
       </div>
+
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl leading-tight pr-8">{selectedAnnouncement?.title}</DialogTitle>
+            <CardDescription className="flex items-center gap-2 mt-2">
+              <span className="font-medium text-foreground">{selectedAnnouncement?.authorName}</span>
+              <span>•</span>
+              <span>{selectedAnnouncement && format(new Date(selectedAnnouncement.createdAt), 'MMM d, yyyy h:mm a')}</span>
+            </CardDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <div 
+              className="prose prose-sm md:prose-base dark:prose-invert max-w-none text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: selectedAnnouncement?.content || '' }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
