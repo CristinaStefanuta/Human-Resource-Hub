@@ -22,15 +22,20 @@ import SignUpPage from '@/pages/sign-up/index';
 const queryClient = new QueryClient();
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const isProd = import.meta.env.PROD;
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
 
-const clerkProxyUrl =
-  import.meta.env.VITE_CLERK_PROXY_URL ||
-  `${window.location.origin}${basePath}/api/__clerk`;
+// The Clerk proxy is only active in production. In development, Clerk uses its
+// own dev Frontend API, so forcing the proxy URL here causes the SignIn/SignUp
+// components to fail to load Clerk JS and the app renders a blank screen.
+const clerkProxyUrl = isProd
+  ? import.meta.env.VITE_CLERK_PROXY_URL ||
+    `${window.location.origin}${basePath}/api/__clerk`
+  : undefined;
 
 
 if (!clerkPubKey) {
