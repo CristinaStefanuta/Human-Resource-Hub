@@ -6,17 +6,22 @@ import {
   ListShiftsQueryParams,
   CreateShiftBody,
 } from "@workspace/api-zod";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/shifts", async (req, res): Promise<void> => {
+router.get("/shifts", requireAuth, async (req, res): Promise<void> => {
   const qp = ListShiftsQueryParams.safeParse(req.query);
   if (!qp.success) {
     res.status(400).json({ error: qp.error.message });
     return;
   }
 
-  let query = db
+  const userId = req.user!.id;
+  const isAdmin = req.user!.role === "Admin";
+  const targetUserId = isAdmin && qp.data.userId ? qp.data.userId : userId;
+
+  const query = db
     .select({
       id: shiftsTable.id,
       userId: shiftsTable.userId,
@@ -28,17 +33,14 @@ router.get("/shifts", async (req, res): Promise<void> => {
     })
     .from(shiftsTable)
     .leftJoin(usersTable, eq(shiftsTable.userId, usersTable.id))
+    .where(eq(shiftsTable.userId, targetUserId))
     .orderBy(shiftsTable.date);
-
-  if (qp.data.userId) {
-    query = query.where(eq(shiftsTable.userId, qp.data.userId));
-  }
 
   const shifts = await query;
   res.json(shifts);
 });
 
-router.post("/shifts", async (req, res): Promise<void> => {
+router.post("/shifts", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const body = CreateShiftBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });

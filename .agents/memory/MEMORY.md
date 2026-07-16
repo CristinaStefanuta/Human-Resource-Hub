@@ -1,0 +1,4 @@
+- [PeopleHub auth](peoplehub-auth.md) — Replit-managed Clerk with JIT provisioning; first signup becomes Admin, later signups become Employees.
+- [Clerk proxy path](clerk-proxy-path.md) — Backend mounts the Clerk proxy at `/api/__clerk`; frontend uses same-origin URL so Replit routes `/api` traffic to the API server.
+- [Generated API hooks](generated-api-hooks.md) — Orval-generated `useQuery` hooks require an explicit `queryKey` in `query` options.
+- [Authenticated pages](authenticated-pages.md) — Inside `AuthenticatedLayout`, use `useCurrentUser()` for a non-null user instead of `useUser`.

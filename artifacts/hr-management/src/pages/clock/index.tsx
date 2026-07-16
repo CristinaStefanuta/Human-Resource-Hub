@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useUser } from '@/contexts/UserContext';
+import { useCurrentUser } from '@/contexts/UserContext';
 import {
   useListTimeEntries,
   useCreateTimeEntry,
@@ -27,7 +27,7 @@ import { Play, Pause, Square, Clock as ClockIcon, CalendarDays } from 'lucide-re
 import { useToast } from '@/hooks/use-toast';
 
 export default function ClockPage() {
-  const { currentUser } = useUser();
+  const currentUser = useCurrentUser();
   const isEmployee = currentUser.role === 'Employee';
 
   if (isEmployee) {
@@ -38,7 +38,7 @@ export default function ClockPage() {
 }
 
 function EmployeeClockView() {
-  const { currentUser } = useUser();
+  const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const todayStr = format(new Date(), 'yyyy-MM-dd');

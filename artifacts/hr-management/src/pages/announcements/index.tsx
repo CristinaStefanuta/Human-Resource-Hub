@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@/contexts/UserContext';
+import { useCurrentUser } from '@/contexts/UserContext';
 import { useListAnnouncements, useCreateAnnouncement, useDeleteAnnouncement, getListAnnouncementsQueryKey } from '@workspace/api-client-react';
 import type { Announcement } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,7 +16,7 @@ import { Trash2, Plus, Megaphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AnnouncementsPage() {
-  const { currentUser } = useUser();
+  const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   

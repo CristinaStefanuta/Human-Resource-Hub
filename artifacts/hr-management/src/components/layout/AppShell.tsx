@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { useUser } from '@/contexts/UserContext';
-import { LayoutDashboard, Megaphone, CalendarCheck, Clock, Settings, CheckCircle2 } from 'lucide-react';
+import { LayoutDashboard, Megaphone, CalendarCheck, Clock, Settings, CheckCircle2, LogOut } from 'lucide-react';
 import { 
   Sidebar, 
   SidebarContent, 
@@ -24,10 +24,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useClerk } from '@clerk/react';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { currentUser, switchUser } = useUser();
+  const { currentUser, isAdmin } = useUser();
+  const { signOut } = useClerk();
 
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -36,6 +38,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { label: 'Time & Clock', icon: Clock, href: '/clock' },
     { label: 'Settings', icon: Settings, href: '/settings' },
   ];
+
+  const initials = currentUser?.name
+    ? currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
 
   return (
     <SidebarProvider>
@@ -54,33 +60,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Button variant="outline" className="w-full justify-start h-auto py-3 px-3">
                   <div className="flex items-center gap-3 w-full">
                     <Avatar className="h-9 w-9 border border-border">
+                      {currentUser?.avatarUrl ? (
+                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+                      ) : null}
                       <AvatarFallback className="bg-primary/10 text-primary">
-                        {currentUser.name.split(' ').map(n => n[0]).join('')}
+                        {initials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col items-start flex-1 overflow-hidden">
-                      <span className="text-sm font-medium leading-none truncate w-full text-left">{currentUser.name}</span>
-                      <span className="text-xs text-muted-foreground mt-1 truncate w-full text-left">{currentUser.role}</span>
+                      <span className="text-sm font-medium leading-none truncate w-full text-left">
+                        {currentUser?.name ?? 'Loading...'}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1 truncate w-full text-left">
+                        {currentUser?.role ?? ''}
+                      </span>
                     </div>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[240px]" align="start">
-                <DropdownMenuLabel>Switch Role (Mock Auth)</DropdownMenuLabel>
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{currentUser?.name}</span>
+                    <span className="text-xs text-muted-foreground">{currentUser?.email}</span>
+                  </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => switchUser("Admin")} className="cursor-pointer flex justify-between">
-                  <div>
-                    <p className="font-medium text-sm">Sarah Chen</p>
-                    <p className="text-xs text-muted-foreground">Admin</p>
-                  </div>
-                  {currentUser.role === 'Admin' && <Badge variant="secondary">Active</Badge>}
+                <DropdownMenuItem className="flex justify-between cursor-default">
+                  <span>Role</span>
+                  <Badge variant={isAdmin ? 'default' : 'secondary'}>
+                    {currentUser?.role ?? ''}
+                  </Badge>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => switchUser("Employee")} className="cursor-pointer flex justify-between">
-                  <div>
-                    <p className="font-medium text-sm">Marcus Webb</p>
-                    <p className="text-xs text-muted-foreground">Employee</p>
-                  </div>
-                  {currentUser.role === 'Employee' && <Badge variant="secondary">Active</Badge>}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                  onClick={() => signOut({ redirectUrl: `${import.meta.env.BASE_URL}`.replace(/\/$/, '') || '/' })}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

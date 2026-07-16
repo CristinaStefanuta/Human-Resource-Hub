@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, gte, lt, count, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { usersTable, requestsTable, timeEntriesTable } from "@workspace/db";
-import { GetEmployeeDashboardQueryParams } from "@workspace/api-zod";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -25,14 +25,8 @@ function computeHoursFromEntries(entries: { type: string; timestamp: Date }[]): 
   return Math.round(total * 100) / 100;
 }
 
-router.get("/dashboard/employee", async (req, res): Promise<void> => {
-  const qp = GetEmployeeDashboardQueryParams.safeParse(req.query);
-  if (!qp.success) {
-    res.status(400).json({ error: qp.error.message });
-    return;
-  }
-
-  const userId = qp.data.userId;
+router.get("/dashboard/employee", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.user!.id;
 
   // This week
   const now = new Date();
@@ -126,7 +120,7 @@ router.get("/dashboard/employee", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/dashboard/admin", async (_req, res): Promise<void> => {
+router.get("/dashboard/admin", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);

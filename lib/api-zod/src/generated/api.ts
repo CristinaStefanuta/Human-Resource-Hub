@@ -17,6 +17,21 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Get the currently authenticated user
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['Admin', 'Employee']),
+  "shiftPreferences": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "department": zod.string().nullish(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
  * @summary List all users
  */
 export const ListUsersResponseItem = zod.object({

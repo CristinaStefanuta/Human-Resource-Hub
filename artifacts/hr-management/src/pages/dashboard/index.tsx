@@ -1,10 +1,10 @@
 import React from 'react';
-import { useUser } from '@/contexts/UserContext';
+import { useCurrentUser } from '@/contexts/UserContext';
 import { EmployeeDashboardView } from './EmployeeDashboard';
 import { AdminDashboardView } from './AdminDashboard';
 
 export default function DashboardPage() {
-  const { currentUser } = useUser();
+  const currentUser = useCurrentUser();
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

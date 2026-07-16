@@ -7,6 +7,7 @@ import {
   CreateTimeEntryBody,
   GetWeekTimeEntriesQueryParams,
 } from "@workspace/api-zod";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -43,44 +44,37 @@ function computeHoursFromEntries(entries: { type: string; timestamp: Date }[]): 
   return Math.round(total * 100) / 100;
 }
 
-router.get("/time-entries", async (req, res): Promise<void> => {
+router.get("/time-entries", requireAuth, async (req, res): Promise<void> => {
   const qp = ListTimeEntriesQueryParams.safeParse(req.query);
   if (!qp.success) {
     res.status(400).json({ error: qp.error.message });
     return;
   }
 
-  let query = db
-    .select()
-    .from(timeEntriesTable)
-    .orderBy(timeEntriesTable.timestamp);
+  const userId = req.user!.id;
+  const isAdmin = req.user!.role === "Admin";
+  const targetUserId = isAdmin && qp.data.userId ? qp.data.userId : userId;
 
-  if (qp.data.userId) {
-    query = query.where(eq(timeEntriesTable.userId, qp.data.userId));
-  }
+  const conditions: any[] = [eq(timeEntriesTable.userId, targetUserId)];
 
   if (qp.data.date) {
     const dayStart = new Date(qp.data.date);
     dayStart.setUTCHours(0, 0, 0, 0);
     const dayEnd = new Date(dayStart);
     dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
-
-    const conditions = [
-      gte(timeEntriesTable.timestamp, dayStart),
-      lt(timeEntriesTable.timestamp, dayEnd),
-    ];
-    if (qp.data.userId) {
-      query = query.where(and(eq(timeEntriesTable.userId, qp.data.userId), ...conditions));
-    } else {
-      query = query.where(and(...conditions));
-    }
+    conditions.push(gte(timeEntriesTable.timestamp, dayStart));
+    conditions.push(lt(timeEntriesTable.timestamp, dayEnd));
   }
 
-  const entries = await query;
+  const entries = await db
+    .select()
+    .from(timeEntriesTable)
+    .where(and(...conditions))
+    .orderBy(timeEntriesTable.timestamp);
   res.json(entries);
 });
 
-router.post("/time-entries", async (req, res): Promise<void> => {
+router.post("/time-entries", requireAuth, async (req, res): Promise<void> => {
   const body = CreateTimeEntryBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -89,7 +83,7 @@ router.post("/time-entries", async (req, res): Promise<void> => {
   const [entry] = await db
     .insert(timeEntriesTable)
     .values({
-      userId: body.data.userId,
+      userId: req.user!.id,
       type: body.data.type as "ClockIn" | "ClockOut" | "PauseStart" | "PauseEnd",
       timestamp: body.data.timestamp ? new Date(body.data.timestamp) : new Date(),
     })
@@ -98,7 +92,7 @@ router.post("/time-entries", async (req, res): Promise<void> => {
 });
 
 // GET /time-entries/today — all users' today status (admin view)
-router.get("/time-entries/today", async (_req, res): Promise<void> => {
+router.get("/time-entries/today", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
   const now = new Date();
   const dayStart = new Date(now);
   dayStart.setHours(0, 0, 0, 0);
@@ -142,7 +136,7 @@ router.get("/time-entries/today", async (_req, res): Promise<void> => {
 });
 
 // GET /time-entries/week — weekly summary for a user
-router.get("/time-entries/week", async (req, res): Promise<void> => {
+router.get("/time-entries/week", requireAuth, async (req, res): Promise<void> => {
   const qp = GetWeekTimeEntriesQueryParams.safeParse(req.query);
   if (!qp.success) {
     res.status(400).json({ error: qp.error.message });
@@ -164,7 +158,7 @@ router.get("/time-entries/week", async (req, res): Promise<void> => {
     .from(timeEntriesTable)
     .where(
       and(
-        eq(timeEntriesTable.userId, qp.data.userId),
+        eq(timeEntriesTable.userId, req.user!.id),
         gte(timeEntriesTable.timestamp, weekStart),
         lt(timeEntriesTable.timestamp, weekEnd)
       )

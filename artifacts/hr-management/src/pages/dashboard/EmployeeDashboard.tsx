@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUser } from '@/contexts/UserContext';
+import { useCurrentUser } from '@/contexts/UserContext';
 import { useGetEmployeeDashboard } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,7 +8,7 @@ import { Clock, Calendar, CheckCircle, AlertCircle, FileText } from 'lucide-reac
 import { Badge } from '@/components/ui/badge';
 
 export function EmployeeDashboardView() {
-  const { currentUser } = useUser();
+  const currentUser = useCurrentUser();
   const { data: dashboard, isLoading } = useGetEmployeeDashboard({ userId: currentUser.id }, {
     query: {
       enabled: !!currentUser.id,

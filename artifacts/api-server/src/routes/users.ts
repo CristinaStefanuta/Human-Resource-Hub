@@ -7,10 +7,11 @@ import {
   UpdateUserPreferencesParams,
   UpdateUserPreferencesBody,
 } from "@workspace/api-zod";
+import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/users", async (_req, res): Promise<void> => {
+router.get("/users", requireAuth, async (_req, res): Promise<void> => {
   const users = await db.select().from(usersTable).orderBy(usersTable.id);
   res.json(users);
 });
@@ -32,7 +33,7 @@ router.get("/users/:id", async (req, res): Promise<void> => {
   res.json(user);
 });
 
-router.patch("/users/:id/preferences", async (req, res): Promise<void> => {
+router.patch("/users/:id/preferences", requireAuth, async (req, res): Promise<void> => {
   const params = UpdateUserPreferencesParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

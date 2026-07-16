@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { requestsTable, usersTable } from "@workspace/db";
 import {
@@ -8,6 +8,7 @@ import {
   UpdateRequestStatusParams,
   UpdateRequestStatusBody,
 } from "@workspace/api-zod";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -24,31 +25,36 @@ const requestsWithUser = () => {
       createdAt: requestsTable.createdAt,
     })
     .from(requestsTable)
-    .leftJoin(usersTable, eq(requestsTable.userId, usersTable.id))
-    .orderBy(desc(requestsTable.createdAt));
+    .leftJoin(usersTable, eq(requestsTable.userId, usersTable.id));
 };
 
-router.get("/requests", async (req, res): Promise<void> => {
+router.get("/requests", requireAuth, async (req, res): Promise<void> => {
   const qp = ListRequestsQueryParams.safeParse(req.query);
   if (!qp.success) {
     res.status(400).json({ error: qp.error.message });
     return;
   }
 
-  let query = requestsWithUser();
-
+  const conditions: any[] = [];
+  if (req.user!.role === "Employee") {
+    conditions.push(eq(requestsTable.userId, req.user!.id));
+  }
   if (qp.data.userId) {
-    query = query.where(eq(requestsTable.userId, qp.data.userId));
+    conditions.push(eq(requestsTable.userId, qp.data.userId));
   }
   if (qp.data.status) {
-    query = query.where(eq(requestsTable.status, qp.data.status as "Pending" | "Approved" | "Denied"));
+    conditions.push(eq(requestsTable.status, qp.data.status as "Pending" | "Approved" | "Denied"));
   }
+
+  const query = requestsWithUser()
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(requestsTable.createdAt));
 
   const results = await query;
   res.json(results);
 });
 
-router.post("/requests", async (req, res): Promise<void> => {
+router.post("/requests", requireAuth, async (req, res): Promise<void> => {
   const body = CreateRequestBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -57,7 +63,7 @@ router.post("/requests", async (req, res): Promise<void> => {
   const [inserted] = await db
     .insert(requestsTable)
     .values({
-      userId: body.data.userId,
+      userId: req.user!.id,
       type: body.data.type as "Time Off" | "Equipment" | "Remote Work" | "Other",
       reason: body.data.reason,
       status: "Pending",
@@ -82,7 +88,7 @@ router.post("/requests", async (req, res): Promise<void> => {
   res.status(201).json(row);
 });
 
-router.patch("/requests/:id/status", async (req, res): Promise<void> => {
+router.patch("/requests/:id/status", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const params = UpdateRequestStatusParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

@@ -7,6 +7,7 @@ import {
   CreateAnnouncementBody,
   DeleteAnnouncementParams,
 } from "@workspace/api-zod";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -27,7 +28,7 @@ router.get("/announcements", async (_req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/announcements", async (req, res): Promise<void> => {
+router.post("/announcements", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const body = CreateAnnouncementBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -38,7 +39,7 @@ router.post("/announcements", async (req, res): Promise<void> => {
     .values({
       title: body.data.title,
       content: body.data.content,
-      authorId: body.data.authorId,
+      authorId: req.user!.id,
       imageUrl: body.data.imageUrl ?? null,
     })
     .returning();
@@ -87,7 +88,7 @@ router.get("/announcements/:id", async (req, res): Promise<void> => {
   res.json(row);
 });
 
-router.delete("/announcements/:id", async (req, res): Promise<void> => {
+router.delete("/announcements/:id", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const params = DeleteAnnouncementParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

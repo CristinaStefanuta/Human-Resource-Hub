@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@/contexts/UserContext';
+import { useCurrentUser } from '@/contexts/UserContext';
 import { 
   useListRequests, 
   useCreateRequest, 
@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Check, X, CalendarCheck } from 'lucide-react';
 
 export default function RequestsPage() {
-  const { currentUser } = useUser();
+  const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
