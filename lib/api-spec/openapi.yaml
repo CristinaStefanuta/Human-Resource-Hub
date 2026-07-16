@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: HR Management API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User management
+  - name: announcements
+    description: Company announcements
+  - name: requests
+    description: Employee requests
+  - name: time-entries
+    description: Time tracking
+  - name: dashboard
+    description: Dashboard analytics
+  - name: shifts
+    description: Shift management
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +36,664 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Users ────────────────────────────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+
+  /users/{id}/preferences:
+    patch:
+      operationId: updateUserPreferences
+      tags: [users]
+      summary: Update shift preferences for a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPreferencesUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ── Announcements ─────────────────────────────────────────────────────────────
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      summary: List all announcements
+      responses:
+        "200":
+          description: List of announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: createAnnouncement
+      tags: [announcements]
+      summary: Create a new announcement (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementInput"
+      responses:
+        "201":
+          description: Created announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+
+  /announcements/{id}:
+    get:
+      operationId: getAnnouncement
+      tags: [announcements]
+      summary: Get announcement by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAnnouncement
+      tags: [announcements]
+      summary: Delete an announcement (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Requests ──────────────────────────────────────────────────────────────────
+  /requests:
+    get:
+      operationId: listRequests
+      tags: [requests]
+      summary: List requests (all for admin, own for employee)
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Pending, Approved, Denied]
+      responses:
+        "200":
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Request"
+    post:
+      operationId: createRequest
+      tags: [requests]
+      summary: Submit a new request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestInput"
+      responses:
+        "201":
+          description: Created request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+
+  /requests/{id}/status:
+    patch:
+      operationId: updateRequestStatus
+      tags: [requests]
+      summary: Approve or deny a request (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestStatusUpdate"
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+        "404":
+          description: Not found
+
+  # ── Time Entries ──────────────────────────────────────────────────────────────
+  /time-entries:
+    get:
+      operationId: listTimeEntries
+      tags: [time-entries]
+      summary: List time entries
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            description: ISO date string YYYY-MM-DD to filter by day
+      responses:
+        "200":
+          description: List of time entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeEntry"
+    post:
+      operationId: createTimeEntry
+      tags: [time-entries]
+      summary: Create a time entry (clock in/out/pause)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeEntryInput"
+      responses:
+        "201":
+          description: Created time entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeEntry"
+
+  /time-entries/today:
+    get:
+      operationId: getTodayTimeEntries
+      tags: [time-entries]
+      summary: Get today's time entries for all users (admin overview)
+      responses:
+        "200":
+          description: Today's time entries grouped by user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserAttendance"
+
+  /time-entries/week:
+    get:
+      operationId: getWeekTimeEntries
+      tags: [time-entries]
+      summary: Get this week's time entries for a specific user
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Weekly time summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeekSummary"
+
+  # ── Shifts ────────────────────────────────────────────────────────────────────
+  /shifts:
+    get:
+      operationId: listShifts
+      tags: [shifts]
+      summary: List shifts for the current week
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of shifts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Shift"
+    post:
+      operationId: createShift
+      tags: [shifts]
+      summary: Create a shift (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShiftInput"
+      responses:
+        "201":
+          description: Created shift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
+
+  # ── Dashboard ─────────────────────────────────────────────────────────────────
+  /dashboard/employee:
+    get:
+      operationId: getEmployeeDashboard
+      tags: [dashboard]
+      summary: Get personalized dashboard stats for an employee
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Employee dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeDashboard"
+
+  /dashboard/admin:
+    get:
+      operationId: getAdminDashboard
+      tags: [dashboard]
+      summary: Get global dashboard stats for admin
+      responses:
+        "200":
+          description: Admin dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ── User ───────────────────────────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [Admin, Employee]
+        shiftPreferences:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        department:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UserPreferencesUpdate:
+      type: object
+      properties:
+        shiftPreferences:
+          type: string
+
+    # ── Announcement ───────────────────────────────────────────────────────────
+    Announcement:
+      type: object
+      required: [id, title, content, authorId, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        authorId:
+          type: integer
+        authorName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+
+    AnnouncementInput:
+      type: object
+      required: [title, content, authorId]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        content:
+          type: string
+        authorId:
+          type: integer
+        imageUrl:
+          type: string
+
+    # ── Request ────────────────────────────────────────────────────────────────
+    Request:
+      type: object
+      required: [id, userId, type, reason, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: ["string", "null"]
+        userAvatarUrl:
+          type: ["string", "null"]
+        type:
+          type: string
+          enum: [Time Off, Equipment, Remote Work, Other]
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [Pending, Approved, Denied]
+        createdAt:
+          type: string
+
+    RequestInput:
+      type: object
+      required: [userId, type, reason]
+      properties:
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [Time Off, Equipment, Remote Work, Other]
+        reason:
+          type: string
+
+    RequestStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [Approved, Denied]
+
+    # ── Time Entry ─────────────────────────────────────────────────────────────
+    TimeEntry:
+      type: object
+      required: [id, userId, type, timestamp]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [ClockIn, ClockOut, PauseStart, PauseEnd]
+        timestamp:
+          type: string
+
+    TimeEntryInput:
+      type: object
+      required: [userId, type]
+      properties:
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [ClockIn, ClockOut, PauseStart, PauseEnd]
+        timestamp:
+          type: string
+
+    UserAttendance:
+      type: object
+      required: [userId, userName, status, entries]
+      properties:
+        userId:
+          type: integer
+        userName:
+          type: string
+        userAvatarUrl:
+          type: ["string", "null"]
+        department:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [ClockedIn, OnPause, ClockedOut, NotStarted]
+        clockInTime:
+          type: ["string", "null"]
+        hoursWorkedToday:
+          type: number
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeEntry"
+
+    WeekSummary:
+      type: object
+      required: [userId, weekStart, weekEnd, totalHours, dailyBreakdown]
+      properties:
+        userId:
+          type: integer
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+        totalHours:
+          type: number
+        averageHoursPerDay:
+          type: number
+        dailyBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayHours"
+
+    DayHours:
+      type: object
+      required: [date, hours, label]
+      properties:
+        date:
+          type: string
+        label:
+          type: string
+        hours:
+          type: number
+
+    # ── Shift ──────────────────────────────────────────────────────────────────
+    Shift:
+      type: object
+      required: [id, userId, date, startTime, endTime]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: ["string", "null"]
+        date:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    ShiftInput:
+      type: object
+      required: [userId, date, startTime, endTime]
+      properties:
+        userId:
+          type: integer
+        date:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        notes:
+          type: string
+
+    # ── Dashboard ──────────────────────────────────────────────────────────────
+    EmployeeDashboard:
+      type: object
+      required: [hoursThisWeek, avgDailyHours, requestStats, recentRequests]
+      properties:
+        hoursThisWeek:
+          type: number
+        avgDailyHours:
+          type: number
+        requestStats:
+          $ref: "#/components/schemas/RequestStats"
+        recentRequests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Request"
+        currentStatus:
+          type: string
+          enum: [ClockedIn, OnPause, ClockedOut, NotStarted]
+        hoursToday:
+          type: number
+
+    AdminDashboard:
+      type: object
+      required: [totalEmployees, activeTodayCount, avgHoursPerEmployee, requestStats, requestsByType, attendanceOverview, recentRequests]
+      properties:
+        totalEmployees:
+          type: integer
+        activeTodayCount:
+          type: integer
+        avgHoursPerEmployee:
+          type: number
+        requestStats:
+          $ref: "#/components/schemas/RequestStats"
+        requestsByType:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestTypeCount"
+        attendanceOverview:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceCount"
+        recentRequests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Request"
+
+    RequestStats:
+      type: object
+      required: [total, pending, approved, denied]
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        approved:
+          type: integer
+        denied:
+          type: integer
+
+    RequestTypeCount:
+      type: object
+      required: [type, count]
+      properties:
+        type:
+          type: string
+        count:
+          type: integer
+
+    AttendanceCount:
+      type: object
+      required: [status, count]
+      properties:
+        status:
+          type: string
+        count:
+          type: integer

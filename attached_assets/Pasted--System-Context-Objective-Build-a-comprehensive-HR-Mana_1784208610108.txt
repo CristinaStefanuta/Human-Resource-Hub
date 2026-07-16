@@ -1,0 +1,41 @@
+# System Context & Objective
+Build a comprehensive HR-Management web application. The app requires a clean, modern, and professional UI (e.g., Tailwind CSS, shadcn/ui). It must include Role-Based Access Control (RBAC) with two primary user roles: `Admin` and `Employee`. 
+
+Please use a modern full-stack framework (e.g., Next.js with React) and a lightweight database (e.g., SQLite via Prisma or Drizzle) to handle the backend.
+
+# Data Models Needed
+1. **User:** id, name, email, role (Admin/Employee), shift_preferences.
+2. **Announcement:** id, title, content (HTML/rich text), author_id, created_at.
+3. **Request:** id, user_id, type (Time Off, Equipment, Remote Work, etc.), reason, status (Pending, Approved, Denied), created_at.
+4. **TimeEntry:** id, user_id, type (Clock In, Clock Out, Pause Start, Pause End), timestamp.
+
+# Core Features & Tab Routing
+The application must feature a sidebar or top navigation bar with the following four tabs. The content of these tabs must dynamically change based on whether the logged-in user is an `Admin` or an `Employee`.
+
+## 1. Announcements Tab
+* **Employee View:** A scrolling feed of news posts. Each post displays a title, author, date, and rich content (text and images). 
+* **Admin View:** Same as the employee view, but includes a "Create New Announcement" button. 
+* **Creation Action (Admin):** Opens a modal or page with an input for the Title and a Rich Text Editor (e.g., TipTap, ReactQuill, or similar) allowing text formatting and photo URL embedding. 
+
+## 2. Requests Tab
+* **Employee View:** * A table or list showing their historical requests and current status (Pending, Approved, Denied) with color-coded badges.
+    * A "New Request" button that opens a form. The form must include a dropdown for Request Type (Time Off, Equipment, Remote Work, Other) and a text area for the Reason.
+* **Admin View:** * A comprehensive dashboard showing *all* requests from all employees.
+    * Each pending request must have clear "Accept" and "Deny" action buttons that update the status in the database and UI instantly.
+
+## 3. Clock In/Out Tab (Time Tracking)
+* **Employee View:**
+    * **Controls:** Prominent buttons to "Start Shift", "Take Pause / Lunch Break", "Resume Shift", and "End Shift". These should toggle based on the current state (e.g., cannot "Take Pause" if not clocked in).
+    * **Visual Tracker:** A visually appealing progress bar or circular gauge showing time worked today versus the required daily office hours (e.g., 8 hours). It should calculate time in real-time or update every minute.
+    * **Shift Planner:** A weekly calendar view or list showing their planned shifts for the current Monday-Sunday week.
+* **Admin View:** A read-only overview of who is currently clocked in, on pause, or clocked out today.
+
+## 4. Dashboard (Analytics)
+* **Employee View:** * Personalized metrics cards: Total hours worked this week, Average time spent in the office, and a pie chart or summary of their Request statuses (Approved vs. Denied vs. Open).
+* **Admin View:** * Global metrics cards: Total active employees today, system-wide average office hours, and aggregate analytics on company-wide requests (e.g., "Most requested item: Equipment" or "Pending requests: 12"). Use a charting library (e.g., Recharts or Chart.js) to display this data visually.
+
+# Development Instructions
+1. Scaffold the project and set up the database schema first.
+2. Implement mock authentication so I can easily toggle between viewing the app as an "Admin" and an "Employee" during development.
+3. Build the UI components tab by tab, ensuring mobile responsiveness.
+4. Populate the database with dummy data for Announcements, Requests, and TimeEntries so the Dashboard charts and feeds are fully populated and testable immediately.
