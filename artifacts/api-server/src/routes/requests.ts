@@ -11,8 +11,8 @@ import {
 
 const router: IRouter = Router();
 
-const requestsWithUser = async (whereClause?: Parameters<typeof db.select>[0]) => {
-  const query = db
+const requestsWithUser = () => {
+  return db
     .select({
       id: requestsTable.id,
       userId: requestsTable.userId,
@@ -26,7 +26,6 @@ const requestsWithUser = async (whereClause?: Parameters<typeof db.select>[0]) =
     .from(requestsTable)
     .leftJoin(usersTable, eq(requestsTable.userId, usersTable.id))
     .orderBy(desc(requestsTable.createdAt));
-  return query;
 };
 
 router.get("/requests", async (req, res): Promise<void> => {
@@ -36,16 +35,16 @@ router.get("/requests", async (req, res): Promise<void> => {
     return;
   }
 
-  let rows = await requestsWithUser();
+  let query = requestsWithUser();
 
   if (qp.data.userId) {
-    rows = rows.where(eq(requestsTable.userId, qp.data.userId));
+    query = query.where(eq(requestsTable.userId, qp.data.userId));
   }
   if (qp.data.status) {
-    rows = rows.where(eq(requestsTable.status, qp.data.status as "Pending" | "Approved" | "Denied"));
+    query = query.where(eq(requestsTable.status, qp.data.status as "Pending" | "Approved" | "Denied"));
   }
 
-  const results = await rows;
+  const results = await query;
   res.json(results);
 });
 
