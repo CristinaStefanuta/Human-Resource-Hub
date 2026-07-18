@@ -655,6 +655,13 @@ importers:
         version: 0.31.10
 
   scripts:
+    dependencies:
+      '@clerk/express':
+        specifier: ^2.1.41
+        version: 2.1.41(express@5.2.1)
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../lib/db
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
